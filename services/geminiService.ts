@@ -7,10 +7,13 @@ export async function getPropertyRecommendations(
   inventory: Property[] | string,
   lead: LeadCriteria
 ): Promise<RecommendationResponse | null> {
-  // Use process.env.API_KEY directly when initializing the GoogleGenAI client instance
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please check your environment settings.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
-  // Format inventory context based on whether it's structured data or raw text
   const inventoryContext = typeof inventory === 'string' 
     ? inventory 
     : JSON.stringify(inventory, null, 2);
@@ -40,7 +43,7 @@ export async function getPropertyRecommendations(
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: prompt,
+      contents: [{ parts: [{ text: prompt }] }],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -71,14 +74,13 @@ export async function getPropertyRecommendations(
       }
     });
 
-    // Directly access the .text property as per guidelines
     const resultText = response.text;
-    if (!resultText) return null;
+    if (!resultText) throw new Error("Model returned an empty response.");
     
     return JSON.parse(resultText) as RecommendationResponse;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching recommendations:", error);
-    return null;
+    throw new Error(error.message || "Failed to generate property recommendations.");
   }
 }
 
@@ -86,8 +88,12 @@ export async function askQuestionAboutResources(
   articles: StoredDocument[],
   question: string
 ): Promise<string> {
-  // Use process.env.API_KEY directly when initializing the GoogleGenAI client instance
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please ensure your API Key is configured.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const context = articles.map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`).join('\n\n');
 
@@ -107,17 +113,18 @@ export async function askQuestionAboutResources(
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: prompt,
+      contents: [{ parts: [{ text: prompt }] }],
       config: {
         systemInstruction: "You are a helpful real estate expert grounded in specific documentation.",
         temperature: 0.2,
       }
     });
 
-    // Directly access the .text property as per guidelines
-    return response.text || "I'm sorry, I couldn't generate a response.";
-  } catch (error) {
+    const text = response.text;
+    if (!text) throw new Error("Agent was unable to generate an answer from the provided articles.");
+    return text;
+  } catch (error: any) {
     console.error("Error asking resources:", error);
-    return "There was an error processing your request. Please try again later.";
+    throw new Error(error.message || "The AI Agent encountered an error while reading the library.");
   }
 }

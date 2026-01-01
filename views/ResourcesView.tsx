@@ -12,17 +12,16 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
   const [question, setQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // FIX: Cast Array.from result to File[] to ensure the compiler recognizes the objects as Files
     const files = Array.from(e.target.files || []) as File[];
     if (articles.length + files.length > 50) {
       alert("Maximum 50 articles allowed in the knowledge base.");
       return;
     }
 
-    // FIX: Add explicit type 'File' to the parameter to avoid 'unknown' type errors on properties like name and size
     files.forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -39,7 +38,6 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
           setArticles(prev => [newDoc, ...prev]);
         }
       };
-      // FIX: Ensure file is treated as a Blob for readAsText
       reader.readAsText(file);
     });
   };
@@ -52,11 +50,12 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
     if (!question.trim() || articles.length === 0) return;
     setIsAsking(true);
     setAnswer(null);
+    setError(null);
     try {
       const result = await askQuestionAboutResources(articles, question);
       setAnswer(result);
-    } catch (err) {
-      setAnswer("Error: Could not retrieve advice.");
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setIsAsking(false);
     }
@@ -64,7 +63,6 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
-      {/* Left: Article Management */}
       <div className="lg:col-span-1 space-y-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[700px]">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -99,7 +97,6 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
                     <p className="text-[9px] text-slate-400 font-bold uppercase">{art.size} • {art.type}</p>
                   </div>
                   <button 
-                    // Fixed: Call removeArticle with the article ID directly as a string
                     onClick={() => removeArticle(art.id)}
                     className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"
                   >
@@ -112,7 +109,6 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
         </div>
       </div>
 
-      {/* Right: AI Advisory Panel */}
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-[#0f172a] rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[700px] border border-slate-800">
           <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center gap-4">
@@ -133,6 +129,14 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
                 </div>
                 <p className="text-sm font-bold">Agent Locked</p>
                 <p className="text-xs max-w-xs mt-2">Please upload at least one article to your library to begin receiving AI-powered advice.</p>
+              </div>
+            ) : error ? (
+              <div className="bg-rose-500/10 border border-rose-500/20 p-6 rounded-2xl text-rose-200 text-sm animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center gap-2 mb-2 text-rose-400 font-black uppercase text-[10px] tracking-widest">
+                  <i className="fa-solid fa-circle-exclamation"></i>
+                  System Error
+                </div>
+                {error}
               </div>
             ) : answer ? (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
