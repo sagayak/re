@@ -7,13 +7,8 @@ export async function getPropertyRecommendations(
   inventory: Property[] | string,
   lead: LeadCriteria
 ): Promise<RecommendationResponse | null> {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.error("API Key not found");
-    return null;
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Use process.env.API_KEY directly when initializing the GoogleGenAI client instance
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   // Format inventory context based on whether it's structured data or raw text
   const inventoryContext = typeof inventory === 'string' 
@@ -76,6 +71,7 @@ export async function getPropertyRecommendations(
       }
     });
 
+    // Directly access the .text property as per guidelines
     const resultText = response.text;
     if (!resultText) return null;
     
@@ -90,10 +86,8 @@ export async function askQuestionAboutResources(
   articles: StoredDocument[],
   question: string
 ): Promise<string> {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API Key not found. Please check your environment.";
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Use process.env.API_KEY directly when initializing the GoogleGenAI client instance
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const context = articles.map(doc => `--- DOCUMENT: ${doc.name} ---\n${doc.content}`).join('\n\n');
 
@@ -120,6 +114,7 @@ export async function askQuestionAboutResources(
       }
     });
 
+    // Directly access the .text property as per guidelines
     return response.text || "I'm sorry, I couldn't generate a response.";
   } catch (error) {
     console.error("Error asking resources:", error);

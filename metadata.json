@@ -1,5 +1,9 @@
+
 {
   "name": "PropMatch AI Agent",
   "description": "A high-end real estate recommendation engine that uses Gemini to intelligently match buyer criteria with available property inventory.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
 }

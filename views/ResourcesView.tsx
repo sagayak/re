@@ -99,7 +99,8 @@ const ResourcesView: React.FC<ResourcesViewProps> = ({ articles, setArticles }) 
                     <p className="text-[9px] text-slate-400 font-bold uppercase">{art.size} • {art.type}</p>
                   </div>
                   <button 
-                    onClick={() => removeArticle(id => art.id === id ? removeArticle(art.id) : null)}
+                    // Fixed: Call removeArticle with the article ID directly as a string
+                    onClick={() => removeArticle(art.id)}
                     className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"
                   >
                     <i className="fa-solid fa-trash-can text-xs"></i>
